@@ -1,0 +1,400 @@
+<!-- ideal_completion.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link rel="stylesheet" href="main.css" />
+  </head>
+  <body>
+    <section id="dashboard">
+      <div class="navbar">
+        <a onclick="setPageTitle('GALLERY')">GALLERY</a>
+        <a onclick="setPageTitle('EXERCISE')">EXERCISE</a>
+        <a onclick="setPageTitle('PAINTING')">PAINTING</a>
+        <div class="read">
+          <div class="menu">
+            <button>READ</button>
+            <div class="menu-content">
+              <a onclick="displaySection('webtoon'); setPageTitle('WEBTOON')">WEBTOON</a>
+              <a onclick="displaySection('comic'); setPageTitle('COMIC')">COMIC</a>
+            </div>
+          </div>
+        </div>
+        <div class="view">
+          <div class="menu">
+            <button>VIEW</button>
+            <div class="menu-content">
+              <a onclick="setPageTitle('CARTOON')">CARTOON</a>
+              <a onclick="setPageTitle('SERIES')">SERIES</a>
+              <a onclick="setPageTitle('CINEMA')">CINEMA</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="heading">
+        <h1 id="header"><ANONYMOUS_USER></h1>
+      </div>
+    </section>
+
+    <section id="webtoon" class="catalog-section">
+      <div class="catalogContainer">
+        <div class="banner">
+          <h1>My Webtoon Collection</h1>
+        </div>
+        <div class="inputForm">
+          <input type="text" placeholder="Webtoon Title" />
+          <input type="number" placeholder="Chapter Count" />
+          <select name="group">
+            <option value="Currently Viewing">Currently Viewing</option>
+            <option value="Finished">Finished</option>
+            <option value="Paused">Paused</option>
+            <option value="Discontinued">Discontinued</option>
+            <option value="To Read">To Read</option>
+          </select>
+          <a class="createButton">CREATE NEW</a>
+        </div>
+        <div class="category">
+          <a onclick="selectCategoryWebtoon('EVERY WEBTOON')">Every Webtoon</a>
+          <a onclick="selectCategoryWebtoon('CURRENTLY VIEWING')">Currently Viewing</a>
+          <a onclick="selectCategoryWebtoon('FINISHED')">Finished</a>
+          <a onclick="selectCategoryWebtoon('PAUSED')">Paused</a>
+          <a onclick="selectCategoryWebtoon('DISCONTINUED')">Discontinued</a>
+          <a onclick="selectCategoryWebtoon('TO READ')">To Read</a>
+          <input class="searchBox" placeholder="Search" type="text" />
+        </div>
+        <div class="list">
+          <div class="sectionTitle">
+            <h1 id="category">EVERY WEBTOON</h1>
+          </div>
+          <div class="sortOrder">
+            <div class="order-element">#</div>
+            <div class="order-element">Webtoon Title</div>
+            <div class="order-element">Status</div>
+            <div class="order-element">Chapter</div>
+            <div class="order-element">Rating</div>
+          </div>
+          <div class="entries"></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="comic" class="catalog-section">
+      <div class="catalogContainer">
+        <div class="banner">
+          <h1>My Comic Collection</h1>
+        </div>
+        <div class="inputForm">
+          <input type="text" placeholder="Comic Title" />
+          <input type="number" placeholder="Chapter Count" />
+          <select name="group">
+            <option value="Currently Viewing">Currently Viewing</option>
+            <option value="Finished">Finished</option>
+            <option value="Paused">Paused</option>
+            <option value="Discontinued">Discontinued</option>
+            <option value="To Read">To Read</option>
+          </select>
+          <a class="createButton">CREATE NEW</a>
+        </div>
+        <div class="category">
+          <a onclick="selectCategoryComic('EVERY COMIC')">Every Comic</a>
+          <a onclick="selectCategoryComic('CURRENTLY VIEWING')">Currently Viewing</a>
+          <a onclick="selectCategoryComic('FINISHED')">Finished</a>
+          <a onclick="selectCategoryComic('PAUSED')">Paused</a>
+          <a onclick="selectCategoryComic('DISCONTINUED')">Discontinued</a>
+          <a onclick="selectCategoryComic('TO READ')">To Read</a>
+          <input class="searchBox" placeholder="Search" type="text" />
+        </div>
+        <div class="list">
+          <div class="sectionTitle">
+            <h1 id="category">EVERY COMIC</h1>
+          </div>
+          <div class="sortOrder">
+            <div class="order-element">#</div>
+            <div class="order-element">Comic Title</div>
+            <div class="order-element">Status</div>
+            <div class="order-element">Chapter</div>
+            <div class="order-element">Rating</div>
+          </div>
+          <div class="entries"></div>
+        </div>
+      </div>
+    </section>
+
+    <script>
+      const webtoonGroupCounters = {
+        'Currently Viewing': 1,
+        Finished: 1,
+        Paused: 1,
+        Discontinued: 1,
+        'To Read': 1,
+      };
+
+      const comicGroupCounters = {
+        'Currently Viewing': 1,
+        Finished: 1,
+        Paused: 1,
+        Discontinued: 1,
+        'To Read': 1,
+      };
+
+      const groupColors = {
+        'Currently Viewing': ['#111', '#333'],
+        Finished: ['#222', '#444'],
+        // Add more groups and colors as needed
+      };
+
+      // General function to update group numbers
+      function updateGroupNumbers(group, type) {
+        const entries = document.querySelectorAll(`#${type} .entry-item`);
+        let sequenceNum = 1;
+
+        entries.forEach((entry) => {
+          const entryGroup = entry.getAttribute('data-group');
+          if (group === 'EVERYTHING' || group === entryGroup.toUpperCase()) {
+            const numElement = entry.querySelector('.serial-number');
+            numElement.innerText = sequenceNum;
+            sequenceNum++;
+          }
+        });
+      }
+
+      // General function to update list background colors
+      function updateListBackgroundColors(group, type) {
+        const entries = document.querySelectorAll(`#${type} .entry-item`);
+        // Changing the background color to the text content is visible
+        const coloring = groupColors[group] || ['#FFFF', '#333'];
+
+        let colIndex = 0;
+        entries.forEach((entry) => {
+          const entryGroup = entry.getAttribute('data-group');
+          if (group === 'EVERYTHING' || group === entryGroup.toUpperCase()) {
+            entry.style.backgroundColor = colIndex % 2 === 0 ? coloring[0] : coloring[1];
+            colIndex++;
+          }
+        });
+      }
+
+      // Webtoon List Functions
+
+      function filterWebtoonCatalog(group) {
+        const webtoonEntries = document.querySelectorAll('#webtoon .entry-item');
+        let sequenceNum = 1;
+
+        webtoonEntries.forEach((entry) => {
+          const entryGroup = entry.getAttribute('data-group');
+          if (group === 'EVERY WEBTOON' || group === entryGroup.toUpperCase()) {
+            entry.style.display = 'grid';
+            const numElement = entry.querySelector('.serial-number');
+            numElement.innerText = sequenceNum;
+            sequenceNum++;
+          } else {
+            entry.style.display = 'none';
+          }
+        });
+        updateGroupNumbers(group, 'webtoon');
+        updateListBackgroundColors(group, 'webtoon');
+      }
+
+      document.querySelector('#webtoon .createButton').addEventListener('click', function () {
+        const name = document.querySelector('#webtoon input[type="text"]').value;
+        const count = document.querySelector('#webtoon input[type="number"]').value;
+        const classification = document.querySelector('#webtoon select[name="group"]').value;
+
+        if (name === '' || count === '') {
+          alert('Kindly complete all fields.');
+          return;
+        }
+
+        const catalogEntries = document.querySelector('#webtoon .entries');
+        const webEntry = document.createElement('div');
+        webEntry.className = 'entry-item';
+        webEntry.setAttribute('data-group', classification);
+        webEntry.innerHTML = `
+        <div class="entry-item-content"><span class="serial-number">${webtoonGroupCounters[classification]}</span></div>
+        <div class="entry-item-content"><span class="entry-title">${name}</span></div>
+        <div class="entry-item-content">
+            <select class="entry-status">
+                <option value="Currently Viewing" ${classification === 'Currently Viewing' ? 'selected' : ''}>Currently Viewing</option>
+                <option value="Finished" ${classification === 'Finished' ? 'selected' : ''}>Finished</option>
+                <option value="Paused" ${classification === 'Paused' ? 'selected' : ''}>Paused</option>
+                <option value="Discontinued" ${classification === 'Discontinued' ? 'selected' : ''}>Discontinued</option>
+                <option value="To Read" ${classification === 'To Read' ? 'selected' : ''}>To Read</option>
+            </select>
+        </div>
+        <div class="entry-item-content chapter-details">
+            <input type="number" class="entry-chapter" value="${count}" min="1">
+        </div>
+        <div class="entry-item-content">
+            <span class="entry-rating">-/-</span>
+        </div>
+        <div class="entry-item-content remove-container">
+            <button class="remove-button">X</button>
+        </div>
+    `;
+
+        catalogEntries.appendChild(webEntry);
+        webtoonGroupCounters[classification]++;
+        document.querySelector('#webtoon input[type="text"]').value = '';
+        document.querySelector('#webtoon input[type="number"]').value = '';
+        document.querySelector('#webtoon select[name="group"]').value = 'Currently Viewing';
+        const activeGroup = document.querySelector('#webtoon #category').innerText;
+        filterWebtoonCatalog(activeGroup);
+      });
+
+      document.querySelector('#webtoon .entries').addEventListener('change', function (event) {
+        if (event.target.classList.contains('entry-status')) {
+          const newMembership = event.target.value;
+          const webtoonEntry = event.target.closest('.entry-item');
+          const priorMembership = webtoonEntry.getAttribute('data-group');
+          webtoonEntry.setAttribute('data-group', newMembership);
+
+          webtoonGroupCounters[priorMembership]--;
+          webtoonGroupCounters[newMembership]++;
+
+          const activeGroup = document.querySelector('#webtoon #category').innerText;
+          filterWebtoonCatalog(activeGroup);
+        }
+      });
+
+      document.querySelector('#webtoon .entries').addEventListener('click', function (event) {
+        if (event.target.classList.contains('remove-button')) {
+          if (confirm('You sure you want to remove this webtoon?')) {
+            const webtoonEntry = event.target.closest('.entry-item');
+            const membership = webtoonEntry.getAttribute('data-group');
+
+            webtoonEntry.remove();
+            webtoonGroupCounters[membership]--;
+
+            const activeGroup = document.querySelector('#webtoon #category').innerText;
+            filterWebtoonCatalog(activeGroup);
+          }
+        } else if (event.target.classList.contains('entry-rating')) {
+          let customRating = prompt('Enter new rating (0-10):');
+          customRating = Math.max(0, Math.min(10, parseInt(customRating)));
+          if (!isNaN(customRating)) {
+            event.target.innerText = `${customRating}/10`;
+          }
+        }
+      });
+
+      // Comic List Functions
+
+      function filterComicCatalog(group) {
+        const comicEntries = document.querySelectorAll('#comic .entry-item');
+        let sequenceNum = 1;
+
+        comicEntries.forEach((entry) => {
+          const entryGroup = entry.getAttribute('data-group');
+          if (group === 'EVERY COMIC' || group === entryGroup.toUpperCase()) {
+            entry.style.display = 'grid';
+            const numElement = entry.querySelector('.serial-number');
+            numElement.innerText = sequenceNum;
+            sequenceNum++;
+          } else {
+            entry.style.display = 'none';
+          }
+        });
+        updateGroupNumbers(group, 'comic');
+        updateListBackgroundColors(group, 'comic');
+      }
+
+      document.querySelector('#comic .createButton').addEventListener('click', function () {
+        const name = document.querySelector('#comic input[type="text"]').value;
+        const count = document.querySelector('#comic input[type="number"]').value;
+        const classification = document.querySelector('#comic select[name="group"]').value;
+
+        if (name === '' || count === '') {
+          alert('Kindly complete all fields.');
+          return;
+        }
+
+        const catalogEntries = document.querySelector('#comic .entries');
+        const comicEntry = document.createElement('div');
+        comicEntry.className = 'entry-item';
+        comicEntry.setAttribute('data-group', classification);
+        comicEntry.innerHTML = `
+        <div class="entry-item-content"><span class="serial-number">${comicGroupCounters[classification]}</span></div>
+        <div class="entry-item-content"><span class="entry-title">${name}</span></div>
+        <div class="entry-item-content">
+            <select class="entry-status">
+                <option value="Currently Viewing" ${classification === 'Currently Viewing' ? 'selected' : ''}>Currently Viewing</option>
+                <option value="Finished" ${classification === 'Finished' ? 'selected' : ''}>Finished</option>
+                <option value="Paused" ${classification === 'Paused' ? 'selected' : ''}>Paused</option>
+                <option value="Discontinued" ${classification === 'Discontinued' ? 'selected' : ''}>Discontinued</option>
+                <option value="To Read" ${classification === 'To Read' ? 'selected' : ''}>To Read</option>
+            </select>
+        </div>
+        <div class="entry-item-content chapter-details">
+            <input type="number" class="entry-chapter" value="${count}" min="1">
+        </div>
+        <div class="entry-item-content">
+            <span class="entry-rating">-/-</span>
+        </div>
+        <div class="entry-item-content remove-container">
+            <button class="remove-button">X</button>
+        </div>
+    `;
+
+        catalogEntries.appendChild(comicEntry);
+        comicGroupCounters[classification]++;
+        document.querySelector('#comic input[type="text"]').value = '';
+        document.querySelector('#comic input[type="number"]').value = '';
+        document.querySelector('#comic select[name="group"]').value = 'Currently Viewing';
+        const activeGroup = document.querySelector('#comic #category').innerText;
+        filterComicCatalog(activeGroup);
+      });
+
+      document.querySelector('#comic .entries').addEventListener('change', function (event) {
+        if (event.target.classList.contains('entry-status')) {
+          const newMembership = event.target.value;
+          const comicEntry = event.target.closest('.entry-item');
+          const priorMembership = comicEntry.getAttribute('data-group');
+          comicEntry.setAttribute('data-group', newMembership);
+
+          comicGroupCounters[priorMembership]--;
+          comicGroupCounters[newMembership]++;
+
+          const activeGroup = document.querySelector('#comic #category').innerText;
+          filterComicCatalog(activeGroup);
+        }
+      });
+
+      document.querySelector('#comic .entries').addEventListener('click', function (event) {
+        if (event.target.classList.contains('remove-button')) {
+          if (confirm('You sure you want to remove this comic?')) {
+            const comicEntry = event.target.closest('.entry-item');
+            const membership = comicEntry.getAttribute('data-group');
+
+            comicEntry.remove();
+            comicGroupCounters[membership]--;
+
+            const activeGroup = document.querySelector('#comic #category').innerText;
+            filterComicCatalog(activeGroup);
+          }
+        } else if (event.target.classList.contains('entry-rating')) {
+          let customRating = prompt('Enter new rating (0-10):');
+          customRating = Math.max(0, Math.min(10, parseInt(customRating)));
+          if (!isNaN(customRating)) {
+            event.target.innerText = `${customRating}/10`;
+          }
+        }
+      });
+
+      function selectCategoryComic(category) {
+        // Update the category title
+          document.querySelector('#comic #category').innerText = category;
+          filterComicCatalog(category);
+        
+      }
+      function selectCategoryWebtoon(category) {
+        // Update the category title
+          document.querySelector('#webtoon #category').innerText = category;
+          filterWebtoonCatalog(category);
+        
+      }
+
+    </script>
+  </body>
+</html>

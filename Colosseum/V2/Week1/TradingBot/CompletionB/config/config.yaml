@@ -1,0 +1,35 @@
+exchange:
+  name: "binance"
+  testnet: false
+  api_key: "${BINANCE_API_KEY}"
+  api_secret: "${BINANCE_API_SECRET}"
+
+trading:
+  symbols:
+    - "BTC/USDT"
+    - "ETH/USDT"
+  base_order_size_usdt: 100
+  max_open_trades: 3
+  stop_loss_percentage: 2.5
+  take_profit_percentage: 5
+  position_size_percentage: 2
+
+strategies:
+  moving_average:
+    enabled: true
+    short_window: 20
+    long_window: 50
+    
+  rsi:
+    enabled: true
+    period: 14
+    overbought: 70
+    oversold: 30
+
+telegram:
+  enabled: true
+  bot_token: "${TELEGRAM_BOT_TOKEN}"
+  chat_id: "${TELEGRAM_CHAT_ID}"
+
+database:
+  url: "sqlite:///trading_bot.db"

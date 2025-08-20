@@ -1,0 +1,336 @@
+<!-- ideal_completion.html  -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ABC CORP</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: white;
+            justify-content: center;
+        }
+
+        .HEADER {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .Header1 {
+            background-color: transparent;
+            height: 35px;
+            width: 100%;
+            color: black;
+            font-weight: 900;
+            text-align: center;
+            line-height: 35px;
+            border: solid #123456;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .hed1 {
+            color: #26A8E0;
+        }
+
+        .Header2 {
+            background-color: transparent;
+            height: 35px;
+            width: 100%;
+            color: #26A8E0;
+            font-weight: 900;
+            text-align: center;
+            line-height: 35px;
+            border: solid #123456;
+            border-top: 0;
+        }
+
+        .Emp_detail {
+            background-color: transparent;
+            height: 35px;
+            width: 100%;
+            color: black;
+            font-weight: 700;
+            text-align: center;
+            line-height: 35px;
+            border: solid #123456;
+            border-top: 0;
+            display: flex;
+            gap: 12%;
+        }
+
+        .Emp_detail p {
+            font-size: 16px;
+            margin: 0 10px;
+        }
+
+        @media only screen and (max-width: 767px) {
+            .hed1 {
+                font-size: 8px;
+                padding-left: 0%;
+            }
+
+            .Header2 {
+                font-size: 8px;
+            }
+
+            .Header1 button {
+                font-size: 8px;
+            }
+        }
+
+        .Header1 button {
+            background-color: #26A8E0;
+            border: none;
+            border-radius: 8px;
+            padding: 3px 10px;
+            color: white;
+        }
+
+        .Header1 button:hover {
+            background-color: #0084ff;
+            border-radius: 8px;
+        }
+
+        .logo img {
+            width: 90px;
+            margin-top: 10px;
+        }
+
+        .container {
+            margin: 0 auto;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #26A8E0;
+        }
+
+        .form-container {
+            width: 100%;
+            margin-bottom: 2%;
+            display: flex;
+            gap: 25px;
+            align-items: center;
+        }
+
+        .form-group {
+            display: grid;
+            align-items: center;
+        }
+
+        .form-group label {
+            margin-right: 10px;
+            font-weight: bold;
+            color: #26A8E0;
+        }
+
+        .form-container input {
+            width: 100%;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        
+        .form-group button{
+            margin-top: 17px;
+            height: 25px;
+            background-color: #26A8E0;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            padding: 5px 10px;
+        }
+        
+        .total-calc input {
+            width: 203px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        .table-container {
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+
+        #dataTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        #dataTable th, #dataTable td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        #dataTable th {
+            background-color: #26A8E0;
+            color: white;
+        }
+
+        #dataTable tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+
+<div id="total-form">
+    <div class="HEADER">
+        <div class="Header1">
+            <div class="logo"><img src="Assets/ABC_LOGOS.png" alt="ABC Logo"></div>
+            <div class="hed1">ABC CORPORATION LTD</div>
+            <div style="padding-right: 15px;">
+                <button onclick="signOut()">Sign Out</button>
+            </div>
+        </div>
+        <div class="Header2">ABC CONSIGNMENT DETAILS</div>
+    </div>
+
+    <div class="container" id="formContainer">
+        <!-- Serial Key Input and Submit Button -->
+        <div class="form-container">
+            <div class="form-group">
+                <label for="serialNoInput">Input Packing Slip No:</label>
+                <input type="text" id="serialNoInput" name="serialNo" autocomplete="off" required>
+            </div>
+            <div class="form-group">
+                <button id="filterButton">Fetch Data</button>
+            </div>
+        </div>
+        
+        <!-- Total Box Weight -->
+        <div class="total-calc">
+            <input type="text" id="totalBoxWeight" placeholder="Total BOX / Weight" readonly name="totalBoxWeight">
+        </div>
+            
+        <div class="table-container">
+            <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Date Time</th>
+                        <th>Vehicle No</th>
+                        <th>Transport Name</th>
+                        <th>Dealer Email</th>
+                        <th>Location</th>
+                        <th>Packing Slip No</th>
+                        <th>Weight</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data rows will be inserted here dynamically -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const empName = urlParams.get('emp_name');
+        
+        if (!empName) {
+            window.location.href = 'signin.jsp';
+        }
+        
+        retrieveAndDisplayTable(); // Initial data fetch on load
+    };
+
+    document.getElementById("filterButton").addEventListener("click", function() {
+        const serialNo = document.getElementById("serialNoInput").value.trim();
+        if (serialNo) {
+            retrieveAndDisplayTable(serialNo); // Load table based on serialNo
+        } else {
+            alert("Please provide a Serial Number for filtering.");
+        }
+    });
+
+    function retrieveAndDisplayTable(serialNo = "") {
+        const url = `FetchDataServlet?serialNo=${serialNo}`;
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+
+                // Reset total weight and box count
+                let totalWeight = 0;
+                let boxCount = 0;
+
+                // Populate table
+                const tableBody = document.getElementById("dataTable").getElementsByTagName('tbody')[0];
+                tableBody.innerHTML = ''; // Clear existing rows
+
+                // Check if both arrays exist and have data
+                if (Array.isArray(data.scanMasterDataArray) && data.scanMasterDataArray.length > 0 &&
+                    Array.isArray(data.loadingDataArray) && data.loadingDataArray.length > 0) {
+
+                    // Create a map for loadingDataArray with 'serialKey' as key
+                    const loadingDataMap = {};
+                    data.loadingDataArray.forEach(item => {
+                        loadingDataMap[item.serialKey] = item;
+                    });
+
+                    // Loop over scanMasterDataArray
+                    data.scanMasterDataArray.forEach((scanItem, index) => {
+                        const serialKey = scanItem.serialKey;
+                        const loadingItem = loadingDataMap[serialKey];
+
+                        const row = tableBody.insertRow();
+                        row.insertCell(0).textContent = index + 1; // ID
+                        row.insertCell(1).textContent = loadingItem ? loadingItem.createdTime || "" : ""; // Date Time
+                        row.insertCell(2).textContent = loadingItem ? loadingItem.vehicleNo || "" : ""; // Vehicle No
+                        row.insertCell(3).textContent = loadingItem ? loadingItem.transportName || "" : ""; // Transport Name
+                        row.insertCell(4).textContent = loadingItem ? loadingItem.dealerEmail || "" : ""; // Dealer Email
+                        row.insertCell(5).textContent = loadingItem ? loadingItem.location || "" : ""; // Location
+                        row.insertCell(6).textContent = scanItem.SerialNo || ""; // Packing Slip No
+                        row.insertCell(7).textContent = (scanItem.Weight || "") + " kg"; // Weight
+
+                        // Add weight and box count
+                        const weight = parseFloat(scanItem.Weight) || 0;
+                        totalWeight += weight;
+                        boxCount++;
+                    });
+
+                } else {
+                    // Handle when data arrays are missing or empty
+                    const row = tableBody.insertRow();
+                    const cell = row.insertCell(0);
+                    cell.colSpan = 8;
+                    cell.textContent = "No data found for the selected serial number.";
+                    cell.style.textAlign = "center";
+                }
+
+                // Update totalBoxWeight input with calculated weight and box count
+                document.getElementById("totalBoxWeight").value = ` ${boxCount} box / ${totalWeight.toFixed(2)} kg`;
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+            });
+    }
+    
+    function signOut() {
+        // Clear local storage
+        localStorage.clear();
+        
+        // Redirect to the logout page
+        window.location.href = "signout.jsp";
+    }
+});
+</script>
+
+</body>
+</html>

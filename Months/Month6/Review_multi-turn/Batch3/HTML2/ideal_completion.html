@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Details of Patients</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.min.css">
+    <style>
+        .cubic {
+            width: 200px;
+            height: 200px;
+            background-color: #007bff; /* Blue background */
+            color: white;
+            border: 1px solid #ccc;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            padding-top: 60px; /* Adjusted for labels space */
+        }
+
+        .section-label {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .last-name {
+            position: absolute;
+            top: 35px; /* Dropped 10 pixels lower */
+            left: 20px; /* Moved 10 pixels medially */
+            font-size: 14px;
+        }
+
+        .years-old {
+            position: absolute;
+            top: 35px; /* Dropped 10 pixels lower */
+            right: 20px; /* Moved 10 pixels medially */
+            font-size: 14px;
+        }
+
+        .time-gap {
+            position: absolute;
+            bottom: 10px; /* Located at bottom of the box */
+            left: 10px;
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .diabetes-icon {
+            position: absolute;
+            top: 140px;
+            right: 10px; /* Icon placed by top-right */
+            font-size: 20px;
+            color: #ffffff; /* Icon color setting */
+        }
+
+        .flip-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .flip-icon.active {
+            color: #ffc107; /* Active state color (yellow) */
+            transform: scale(1.2); /* Slightly enlarge the icon on active state */
+        }
+
+        .menu-icon {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .extra-item {
+            display: flex;
+            justify-content: space-between;
+            background-color: #ffffff;
+            color: #000000;
+            padding: 2px 5px;
+            border-radius: 5px;
+            margin-top: 5px;
+        }
+
+        .remove-button {
+            color: red;
+            cursor: pointer;
+            margin-left: 5px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container mt-5">
+    <!-- Organize by LocationCategory -->
+    {% for group, patients in patients|groupby('LocationCategory') %}
+    <h3 class="mb-4">{{ group }}</h3>
+    <div class="row justify-content-start"> <!-- Align items at the start -->
+        {% for patient in patients %}
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3 col-xl-2 mb-4">
+            <div class="cubic border">
+                <span class="section-label">{{ patient['CurrentStatus'] }}</span> <!-- Displays the current status -->
+                <span class="last-name">{{ patient['LastName'] }}</span> <!-- Surname on the left side -->
+                <span class="years-old">{{ patient['Age'] }} yrs</span> <!-- Age on the right side -->
+                
+                <!-- Show Time Gap -->
+                <span class="time-gap">{{ patient['TimeGap'] }}</span>
+                
+                <!-- Conditional display of Diabetes icon -->
+                {% if patient['ChronicIllness'] %}
+                <i class="bi bi-droplet-fill diabetes-icon" title="Chronic Illness"></i>
+                {% endif %}
+
+                <!-- Info Icon -->
+                <div class="flip-icon" data-bs-toggle="modal" data-bs-target="#patientModal" 
+                     onclick='showPatientDetails({{ patient | tojson | safe }})'>
+                    <i class="bi bi-info-circle"></i> <!-- Info circle icon -->
+                </div>
+                <div class="menu-icon" id="menuDropdownButton" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-plus"></i> <!-- Plus icon -->
+                </div>
+                <ul class="dropdown-menu" aria-labelledby="menuDropdownButton">
+                    <li><a class="dropdown-item" href="#" onclick="addText(event, 'Chronic Illness')">Chronic Illness</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="addText(event, 'Impaired Memory')">Impaired Memory</a></li>
+                    <li><a class="dropdown-item" href="#" onclick="addText(event, 'Respiratory Condition')">Respiratory Condition</a></li>
+                </ul>
+                <div class="extra-items-container mt-2"></div>
+            </div>
+        </div>
+        <!-- After every 5 boxes, start a new row -->
+        {% if loop.index % 4 == 0 %}
+    </div>
+    <div class="row justify-content-start"> <!-- Continue alignment at the start -->
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Patient Modal -->
+<div class="modal fade" id="patientModal" tabindex="-1" aria-labelledby="patientModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="patientModalLabel">Patient Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>First Name:</strong> <span id="modalFirstName"></span></p>
+                <p><strong>Surname:</strong> <span id="modalLastName"></span></p>
+                <p><strong>Date of Birth:</strong> <span id="modalDateOfBirth"></span></p>
+                <p><strong>Unique ID:</strong> <span id="modalUniqueID"></span></p>
+                <p><strong>Arrival Time:</strong> <span id="modalArrivalTime"></span></p>
+                <p><strong>Age:</strong> <span id="modalAge"></span></p>
+                <p><strong>Symptom:</strong> <span id="modalSymptom"></span></p>
+                <p><strong>Referral Date:</strong> <span id="modalConsultationRequestTime"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+<script>
+    function showPatientDetails(patient) {
+        document.getElementById('modalFirstName').innerText = patient.FirstName;
+        document.getElementById('modalLastName').innerText = patient.LastName;
+        document.getElementById('modalDateOfBirth').innerText = patient.DateOfBirth;
+        document.getElementById('modalUniqueID').innerText = patient.UniqueID;
+        document.getElementById('modalArrivalTime').innerText = patient.ArrivalTime;
+        document.getElementById('modalAge').innerText = patient.Age;
+        document.getElementById('modalSymptom').innerText = patient.Symptom;
+        document.getElementById('modalConsultationRequestTime').innerText = patient.ConsultationRequestTime;
+    }
+
+    function addText(event, text) {
+        event.preventDefault();
+        const container = event.target.closest('.cubic').querySelector('.extra-items-container');
+
+        // Create a new div for added item
+        const item = document.createElement('div');
+        item.className = 'extra-item';
+        item.innerHTML = `${text} <span class="remove-button" onclick="removeText(this)">x</span>`;
+
+        // Append new item to container
+        container.appendChild(item);
+    }
+
+    function removeText(element) {
+        // Remove clicked delete button's parent element
+        element.parentElement.remove();
+    }
+</script>
+
+</body>
+</html>

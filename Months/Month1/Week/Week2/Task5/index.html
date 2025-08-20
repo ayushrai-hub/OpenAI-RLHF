@@ -1,0 +1,23 @@
+<script>
+    $(document).ready(function() {
+        var campaignStatusHeaderColor = "#FF0000"; // Example color
+
+        // Define the custom header content
+        var newCampaignStatusHeader = `
+            <span data-toggle='tooltip' data-placement='top' title='Campaign state'>
+                <svg style='color:${campaignStatusHeaderColor}' class='symbol-icon state-icon'>
+                    <use xlink:href='#svgState'></use>
+                </svg>
+            </span>
+        `;
+
+        // Find the existing header element
+        var headerElement = grid.thead.find('[data-title="Campaign state"] .k-link');
+
+        // Append the custom content to the existing content
+        headerElement.html(newCampaignStatusHeader + headerElement.html());
+
+        // Initialize tooltips (if using Bootstrap tooltips)
+        $('[data-toggle="tooltip"]').tooltip();
+    });
+</script>

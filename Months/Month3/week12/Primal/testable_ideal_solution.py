@@ -1,0 +1,190 @@
+
+import numpy as np
+from scipy.linalg import norm
+
+def execute_DualTri(y_opt_ini, y_start, Total_Iter, cost_function, Total_Nodes, Data_Size, nu, nu_adjust, gamma_rate, W_link_matrix, requires_central_solution, return_y, Q, a, Q_trial, a_trial):
+    Linear_Operator_Size = np.zeros(Total_Nodes)
+    Data_Size_W = Data_Size
+    identity_zero_matr = [None] * Total_Nodes
+    y_start_cell = [None] * Total_Nodes
+    Data_Size_values = Data_Size * np.ones(Total_Nodes)
+
+    if cost_function != 'MC_adjust':
+        for k in range(Total_Nodes):
+            identity_zero_matr[k] = np.eye(Data_Size)
+            y_start_cell[k] = y_start
+            Linear_Operator_Size[k] = a[k].shape[0]
+    if cost_function in ['MC_adjust', 'L1_adjust']:
+        for k in range(Total_Nodes):
+            Q[k] = np.hstack((Q[k], np.eye(a[k].shape[0])))
+            identity_zero_matr[k] = np.hstack((np.eye(Data_Size), np.zeros((Data_Size, a[k].shape[0]))))
+            Data_Size_values[k] = Data_Size + a[k].shape[0]
+            y_start_cell[k] = np.concatenate((y_start, np.zeros(a[k].shape[0])))
+            Linear_Operator_Size[k] = a[k].shape[0]
+
+    theta = np.zeros((Total_Nodes, Total_Nodes))
+    alpha, beta = calculate_step_sizes(Q, nu, nu_adjust, W_link_matrix, cost_function)
+    Total_Iter += 1
+
+    z_new = [None] * Total_Nodes
+    z_k = [None] * Total_Nodes
+    y_k = [None] * Total_Nodes
+    y_k1 = [None] * Total_Nodes
+    y_gap = [None] * Total_Nodes
+    u_k = [[None] * Total_Nodes for _ in range(Total_Nodes)]
+    u_k1 = [[None] * Total_Nodes for _ in range(Total_Nodes)]
+    u_k_changed = [[None] * Total_Nodes for _ in range(Total_Nodes)]
+
+    y_mean_duration = np.zeros((Total_Nodes, Total_Iter - 1))
+    y_avgconsensus_duration = np.zeros((Total_Nodes, Total_Iter - 1))
+
+    for o in range(Total_Nodes):
+        z_k[o] = np.zeros(Q[o].shape[0])
+        y_k[o] = y_start_cell[o]
+        y_k1[o] = np.zeros(Data_Size_values[o])
+
+    for o in range(Total_Nodes):
+        for m in range(Total_Nodes):
+            if W_link_matrix[m, o] == 1:
+                u_k[o][m] = np.zeros(Data_Size_W)
+                u_k1[o][m] = np.zeros(Data_Size_W)
+                u_k_changed[o][m] = np.zeros(Data_Size_W)
+
+    Q_transpose = [Q_i.T for Q_i in Q]
+
+    if requires_central_solution == 1:
+        y_opt_summary = Compute_y(y_opt_ini, Q, a, max(nu), max(nu_adjust), gamma_rate, cost_function)
+    else:
+        y_opt_summary = np.zeros(Data_Size_W)
+
+    for m in range(Total_Iter - 1):
+        for v in range(Total_Nodes):
+            sum_u_neighbors = calculate_sum_u_neighbors(v, Total_Nodes, W_link_matrix, u_k, y_k, theta, Data_Size_values, cost_function, a)
+            z = z_k[v] + beta[v] * Q[v] @ y_k[v]
+            y_k1[v], z_k[v] = update_variables(v, z, beta[v], Q[v], y_k[v], alpha[v], sum_u_neighbors, nu[v], nu_adjust[v], gamma_rate, cost_function, a[v])
+
+            update_u_k(v, Total_Nodes, W_link_matrix, u_k, theta, Data_Size_values, cost_function, a, y_k)
+
+        y_gap = [y_k1[v] - y_k[v] for v in range(Total_Nodes)]
+        y_k = y_k1.copy()
+
+        y_error_duration, y_avgconsensus_duration, y_opt = calculate_metrics(Total_Nodes, identity_zero_matr, y_k, y_opt_ini, y_opt_summary, return_y, Q_trial, a_trial)
+
+        if check_convergence(y_gap, cost_function, m):
+            break
+
+    if return_y:
+        y_error_duration = y_mean_duration
+
+    return y_error_duration, y_avgconsensus_duration, y_opt_summary, y_opt
+
+
+def calculate_step_sizes(Q, nu, nu_adjust, W_link_matrix, cost_function):
+    Total_Nodes = len(Q)
+    alpha = np.zeros(Total_Nodes)
+    beta = np.zeros(Total_Nodes)
+    theta = W_link_matrix | np.eye(Total_Nodes)
+
+    for o in range(Total_Nodes):
+        Q_norm = norm(Q[o].T @ Q[o])
+        Lipschitz_G = calculate_lipschitz(cost_function, nu[o], nu_adjust[o], Q_norm)
+        beta[o] = 0.065
+        alpha_sup = 1 / (Lipschitz_G / 2 + norm(beta[o] * Q[o].T @ Q[o]) + np.sum(theta[o, :]))
+        alpha[o] = 0.09 * alpha_sup
+
+    return alpha, beta
+
+
+def calculate_lipschitz(cost_function, nu, nu_adjust, Q_norm):
+    if cost_function == 'Exponential':
+        return 2 * nu * Q_norm
+    elif cost_function == 'FairPotential':
+        return 5 * nu * Q_norm
+    elif cost_function == 'Hyperbolic':
+        return 1 / nu * Q_norm
+    elif cost_function == 'Tukey':
+        return 0 * nu_adjust + Q_norm
+    elif cost_function == 'L2':
+        return nu * 2 * Q_norm
+    elif cost_function in ['MC_adjust', 'L1_adjust']:
+        return 2 * Q_norm + nu + nu_adjust
+    elif cost_function == 'MC':
+        return 2 * Q_norm + nu
+    elif cost_function == 'Huber':
+        return nu + 2 * Q_norm
+    elif cost_function == 'Huber_gradient':
+        return Q_norm
+    else:
+        return nu * Q_norm
+
+
+def Compute_y(y_opt_ini, Q, a, max_nu, max_nu_adjust, gamma_rate, cost_function):
+    # Placeholder: Actual Compute_y implementation required
+    return np.zeros(y_opt_ini.shape)
+
+
+def calculate_sum_u_neighbors(v, Total_Nodes, W_link_matrix, u_k, y_k, theta, Data_Size_values, cost_function, a):
+    sum_u_neighbors = 0
+    for p in range(Total_Nodes):
+        if W_link_matrix[v, p] == 1:
+            u_k_changed = 0.5 * (u_k[v][p] + u_k[p][v]) + theta[v, p] / 2 * (B_Matrix(v, p, Data_Size_values[v], cost_function, a[v]) @ y_k[v] + B_Matrix(p, v, Data_Size_values[p], cost_function, a[p]) @ y_k[p])
+            sum_u_neighbors += B_Matrix(v, p, Data_Size_values[v], cost_function, a[v]).T @ u_k_changed
+    return sum_u_neighbors
+
+
+def update_variables(v, z, beta, Q, y_k, alpha, sum_u_neighbors, nu, nu_adjust, gamma_rate, cost_function, a):
+    if cost_function in ['MC', 'L1', 'MC_adjust', 'L1_adjust']:
+        param = {'z': a, 'output': 0}
+        solve_prox = prox_l1(z / beta, 1 / beta, param)
+        z_new = z - beta * solve_prox
+        y_k1 = y_k - alpha * (Q.T @ z_new + sum_u_neighbors + grad_H(y_k, nu, nu_adjust, gamma_rate, cost_function, Q, a))
+        z_k = z_new + beta * Q @ (y_k1 - y_k)
+    elif cost_function == 'L2':
+        param = {'z': a, 'output': 0}
+        solve_prox = prox_l2(z / beta, 1 / beta, param)
+        z_new = z - beta * solve_prox
+        y_k1 = y_k - alpha * (Q.T @ z_new + sum_u_neighbors + grad_H(y_k, nu, nu_adjust, gamma_rate, cost_function, Q, a))
+        z_k = z_new + beta * Q @ (y_k1 - y_k)
+    return y_k1, z_k
+
+
+def update_u_k(v, Total_Nodes, W_link_matrix, u_k, theta, Data_Size_values, cost_function, a, y_k):
+    for p in range(Total_Nodes):
+        if W_link_matrix[v, p] == 1:
+            u_k[v][p] = u_k_changed[v][p] + theta[v, p] * B_Matrix(v, p, Data_Size_values[v], cost_function, a[v]) @ (y_k[v] - y_k[v])
+
+
+def calculate_metrics(Total_Nodes, identity_zero_matr, y_k, y_opt_ini, y_opt_summary, return_y, Q_trial, a_trial):
+    y_error_duration = np.zeros(Total_Nodes)
+    y_avgconsensus_duration = np.zeros(Total_Nodes)
+    y_opt = np.zeros(identity_zero_matr[0].shape[0])
+
+    for v in range(Total_Nodes):
+        if return_y:
+            y_mean_duration = norm(Q_trial @ identity_zero_matr[v] @ y_k[v] - a_trial)
+        y_error_duration[v] = norm(identity_zero_matr[v] @ y_k[v] - y_opt_ini) ** 2 / norm(y_opt_ini) ** 2
+        y_avgconsensus_duration[v] = norm(identity_zero_matr[v] @ y_k[v] - y_opt_summary) / norm(y_opt_summary)
+        y_opt += identity_zero_matr[v] @ y_k[v] / Total_Nodes
+
+    return y_error_duration, y_avgconsensus_duration, y_opt
+
+
+def check_convergence(y_gap, cost_function, m):
+    if cost_function in ['Huber', 'FairPotential', 'MC_adjust', 'MC', 'Tukey']:
+        convergence_limit = 1e-6
+    else:
+        convergence_limit = 1e-5
+
+    if m < 10:
+        return False
+
+    for gap in y_gap:
+        if norm(gap, np.inf) > convergence_limit:
+            return False
+
+    return True
+
+
+def grad_H(y, nu, nu_adjust, gamma_rate, cost_function, Q, a):
+    # Placeholder for actual gradient computation (grad_H function).
+    return np.zeros_like(y)
