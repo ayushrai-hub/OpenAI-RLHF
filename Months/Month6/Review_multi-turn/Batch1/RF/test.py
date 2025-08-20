@@ -1,0 +1,28 @@
+import unittest
+from math import cos, sin
+from ideal_completion import compute_complex_number  # Adjust import as necessary
+
+class TestComputeComplexNumber(unittest.TestCase):
+    def test_zero_angle(self):
+        """Test with angle zero degrees which should result in a real number only."""
+        result = compute_complex_number(1e9, 0)
+        expected_real_part = int(cos(0) * 32767)
+        expected_imag_part = int(sin(0) * 32767)
+        expected = (expected_real_part << 16) | (expected_imag_part & 0xFFFF)
+        self.assertEqual(result, expected)
+
+    def test_full_circle(self):
+        """Test with 360 degrees to ensure it wraps correctly to zero."""
+        result = compute_complex_number(1e9, 360)
+        expected = compute_complex_number(1e9, 0)
+        self.assertEqual(result, expected)
+
+    def test_invalid_frequency(self):
+        """Test with zero or negative frequency which should raise ValueError."""
+        with self.assertRaises(ValueError):
+            compute_complex_number(0, 0)
+        with self.assertRaises(ValueError):
+            compute_complex_number(-1e9, 90)
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

@@ -1,0 +1,7 @@
+year,gameweek,game_is_done,game_code,event_date,squad1_name,squad1_goal_stats_net,squad1_goal_stats_allowed,squad1_goal_stats_wins,squad1_goal_stats_ties,squad1_goal_stats_defeats,squad2_name,squad2_goal_stats_net,squad2_goal_stats_allowed,squad2_goal_stats_wins,squad2_goal_stats_ties,squad2_goal_stats_defeats,squad1_calculated_score,squad2_calculated_score,score_difference,squad1_final_points,squad2_final_points,result
+2022,1,1,32456,2022-09-01T18:00:00,AC Milan,3,0,1,0,0,Juventus,0,3,0,0,1,0.0,0.0,0.0,3,0,1
+2022,1,1,32457,2022-09-02T14:00:00,Lazio,2,2,0,1,0,Roma,2,2,0,1,0,0.0,0.0,0.0,2,2,0
+2022,1,1,32458,2022-09-02T16:00:00,Napoli,4,1,1,0,0,Inter,1,4,0,0,1,0.0,0.0,0.0,4,1,1
+2022,1,1,32459,2022-09-03T18:00:00,Fiorentina,1,1,0,1,0,Atalanta,1,1,0,1,0,0.0,0.0,0.0,1,1,0
+2022,1,1,32460,2022-09-03T20:00:00,Sampdoria,0,3,0,0,1,Genoa,3,0,1,0,0,0.0,0.0,0.0,0,3,-1
+2022,2,1,32461,2022-09-10T18:00:00,AS Roma,2,0,1,0,0,Empoli,0,2,0,0,1,3.0,3.0,0.0,2,0,1

@@ -1,0 +1,380 @@
+<!--ideal_completion.html-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loader Blur Test</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .blurred {
+            filter: blur(5px);
+        }
+
+        #overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .loader {
+            display: none;
+        }
+    </style>
+<script>
+  // Active loaders count to manage blur effect 
+  let activeLoaders = new Set();
+  
+  // Function to show loader and apply blur
+  function showLoader(loaderId) {
+      // Show the loader
+      $(loaderId).show();
+  
+      // Add loaderId to activeLoaders
+      activeLoaders.add(loaderId);
+  
+      // If any loader is active, blur the page
+      if (activeLoaders.size > 0) {
+          $('#content-wrapper').addClass('blurred');
+          $('#overlay').show();
+      }
+  }
+  
+  // Function to hide loader and remove blur if no loaders are active
+  function hideLoader(loaderId) {
+      // Hide the loader
+      $(loaderId).hide();
+  
+      // Remove loaderId from activeLoaders
+      activeLoaders.delete(loaderId);
+  
+      // If no loaders are active, remove blur
+      if (activeLoaders.size === 0) {
+          $('#content-wrapper').removeClass('blurred');
+          $('#overlay').hide();
+      }
+  }
+  
+  $(document).ready(function () {
+  
+      // Listener for changes in Project Category
+      $('#unit-category').change(function () {
+          // Retrieve selected Project Category ID from dropdown
+          var projectCategoryId = $('#unit-category').val();
+  
+          if (projectCategoryId != 0) {
+              // Invoke function to fetch incentive subcategories related to selected Project Category
+              obtainIncentiveSubCategory(projectCategoryId);
+          } else {
+              // Restore the incentive subcategory dropdown if no project category is chosen
+              $('#incentive-category-field').html('<option value="0">Choose</option>');
+          }
+      });
+  
+      // Function to gain incentive subcategory info from the API via Fetch API
+      async function obtainIncentiveSubCategory(projectCategoryId) {
+          showLoader('#project-loader'); // Display loader while acquiring data
+  
+          var apiUrl = `{{ baseurl }}/_api/kum_incentivesubcategorymasters?$select=kum_incentivesubcategoryname,kum_incentivesubcategorymasterid&$filter=_kum_projectcategory_value eq '${projectCategoryId}'`;
+  
+          try {
+              const response = await fetch(apiUrl, {
+                  method: 'GET',
+                  headers: {
+                      'OData-MaxVersion': '4.0',
+                      'OData-Version': '4.0',
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json; charset=utf-8',
+                  },
+                  credentials: 'include',
+              });
+  
+              if (!response.ok) {
+                  throw new Error(`Network response was not satisfactory: ${response.statusText}`);
+              }
+  
+              const info = await response.json();
+              console.log('Collected Incentive Sub Category Data:', info);
+  
+              // Fill the incentive subcategory dropdown
+              let subCategoryOptions = '<option value="0">Choose</option>';
+              info.value.forEach(subCategory => {
+                  subCategoryOptions += `<option value="${subCategory.kum_incentivesubcategorymasterid}">${subCategory.kum_incentivesubcategoryname}</option>`;
+              });
+  
+              $('#incentive-category-field').html(subCategoryOptions);
+          } catch (error) {
+              console.error('Error acquiring incentive subcategory data:', error);
+              $('#incentive-category-field').html('<option value="0">Error obtaining data</option>');
+          } finally {
+              hideLoader('#project-loader'); // Conceal loader after data acquisition
+          }
+      }
+  
+      // Listener for changes in the district
+      $('#district').change(function () {
+          // Extract selected district ID from dropdown
+          var districtId = $('#district').val();
+  
+          if (districtId != 0) {
+              // Implement function to retrieve taluk info for the specified district
+              obtainTalukForDistrict(districtId);
+          } else {
+              // Restart the taluk dropdown if no district is selected
+              $('#block').html('<option value="0">Choose</option>');
+              $('#hiddenTalukId').val(''); // Purge hidden field
+          }
+      });
+  
+      // Function to get taluk data using Fetch API from Dataverse
+      async function obtainTalukForDistrict(districtId) {
+          showLoader('#district-loader'); // Display district loader
+  
+          var apiUrl = `{{ baseurl }}/_api/kum_tahlukmasters?$select=kum_tahlukname,kum_tahlukmasterid&$filter=_kum_district_value eq '${districtId}'`;
+  
+          try {
+              const response = await fetch(apiUrl, {
+                  method: 'GET',
+                  headers: {
+                      'OData-MaxVersion': '4.0',
+                      'OData-Version': '4.0',
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json; charset=utf-8',
+                  },
+                  credentials: 'include',
+              });
+  
+              if (!response.ok) {
+                  throw new Error(`Network response was not satisfactory: ${response.statusText}`);
+              }
+  
+              const info = await response.json();
+              console.log('Collected Taluk Info:', info);
+  
+              let talukOptions = '<option value="0">Choose</option>';
+              info.value.forEach(taluk => {
+                  talukOptions += `<option value="${taluk.kum_tahlukmasterid}">${taluk.kum_tahlukname}</option>`;
+              });
+  
+              $('#block').html(talukOptions);
+          } catch (error) {
+              console.error('Error acquiring taluk data:', error);
+              $('#block').html('<option value="0">Error obtaining taluks</option>');
+          } finally {
+              hideLoader('#district-loader'); // Conceal district loader after data fetch
+          }
+      }
+  
+      // Listener for changes in the taluk (block)
+      $('#block').change(function () {
+          // Extract selected taluk ID from dropdown
+          var talukId = $('#block').val();
+  
+          if (talukId != 0) {
+              // Store selected talukId within hidden field
+              $('#hiddenTalukId').val(talukId);
+  
+              // Fetch zone info for the selected taluk
+              acquireZoneForTaluk();
+          } else {
+              // Restore the zone if no taluk is selected
+              $('#zone').html('');
+              $('#hiddenTalukId').val(''); // Clear hidden field
+          }
+      });
+  
+      // Function to grab zone data using Fetch API from Dataverse
+      async function acquireZoneForTaluk() {
+          showLoader('#taluk-loader'); // Display taluk loader
+  
+          var talukId = $('#hiddenTalukId').val();
+          var apiUrl = `{{ baseurl }}/_api/kum_tahlukmasters?$select=kum_zone&$filter=kum_tahlukmasterid eq '${talukId}'`;
+  
+          try {
+              const response = await fetch(apiUrl, {
+                  method: 'GET',
+                  headers: {
+                      'OData-MaxVersion': '4.0',
+                      'OData-Version': '4.0',
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json; charset=utf-8',
+                  },
+                  credentials: 'include',
+              });
+  
+              if (!response.ok) {
+                  throw new Error(`Network response was not satisfactory: ${response.statusText}`);
+              }
+  
+              const info = await response.json();
+              console.log('Collected Taluk Zone Info:', info);
+  
+              if (info.value && info.value.length > 0) {
+                  var zone = info.value[0].kum_zone;
+                  $('#hiddenZoneId').val(zone);
+                  $('#zone').html('Zone: ' + zone);
+              } else {
+                  $('#zone').html('No zone located for the chosen taluk');
+              }
+          } catch (error) {
+              console.error('Error obtaining zone data:', error);
+              $('#zone').html('Error acquiring zone data');
+          } finally {
+              hideLoader('#taluk-loader'); // Conceal taluk loader post data retrieval
+          }
+      }
+  
+      // Listener for the "Display Incentive" button
+      $("#showInc").on("click", function () {
+          exhibitIncentive1();
+      });
+  
+      // Flag to monitor if table data has been gathered
+      let tableAcquired = false;
+  
+      // Function to reset table data
+      function restoreTable() {
+          if (tableAcquired) {
+              $('#result').html(''); // Eliminate table data
+              tableAcquired = false; // Reset flag
+          }
+      }
+  
+      // Listener for alterations in form fields to restore table data
+      $('#policy, #unit-category, #social-category, #block, #incentive-category-field').change(function () {
+          restoreTable(); // Restore table on field changes
+      });
+  
+      // Listener for district modifications
+      $('#district').change(function () {
+          restoreTable(); // Restore table on district alterations
+      });
+  
+      // Amend the exhibitIncentive1 function to update tableAcquired flag when data is collected
+      async function exhibitIncentive1() {
+          showLoader('#incentive-loader'); // Display incentive loader
+  
+          // Retrieve values from dropdowns
+          const industrialPolicyId = $('#policy').val();
+          const projectCategoryId = $('#unit-category').val();
+          const socialCategoryId = $('#social-category').val();
+          const zone = $('#hiddenZoneId').val();
+          const incentiveSubCategoryId = $('#incentive-category-field').val(); // Incentive Sub Category
+  
+          // Confirm if all necessary elements are chosen
+          if (!industrialPolicyId || !projectCategoryId || !socialCategoryId) {
+              alert("Please opt for all compulsory fields (Policy, Project Category, Social Category).");
+              hideLoader('#incentive-loader'); // Conceal incentive loader on validation failure
+              return;
+          }
+  
+          // Compose the API inquiry URL incorporating 'OR' logic for Incentive Sub Category
+          let apiUrl = `{{ baseurl }}/_api/kum_incentivedetailses?$select=kum_heading,kum_incentivename,kum_notes,kum_zonedescription&$filter=(_kum_industrialpolicy_value eq ${industrialPolicyId} and _kum_projectcategory_value eq ${projectCategoryId} and _kum_socialcategory_value eq ${socialCategoryId} and kum_zone eq ${zone}`;
+  
+          // Add sub-category conditions if field is visible and valid
+          if ($('#incentive-category-env').is(':visible') && incentiveSubCategoryId != 0) {
+              apiUrl += ` and (_kum_incentivesubcategory_value eq ${incentiveSubCategoryId})`;
+          }
+  
+          apiUrl += `)`;
+  
+          console.log("incentive API with OR condition:", apiUrl); // For debugging
+  
+          try {
+              // Obtain incentive details from API
+              const response = await fetch(apiUrl, {
+                  method: 'GET',
+                  headers: {
+                      'OData-MaxVersion': '4.0',
+                      'OData-Version': '4.0',
+                      'Accept': 'application/json',
+                      'Content-Type': 'application/json; charset=utf-8',
+                  },
+                  credentials: 'include', // Include credentials for authenticated inquiries
+              });
+  
+              if (!response.ok) {
+                  throw new Error(`Network response was not satisfactory: ${response.statusText}`);
+              }
+  
+              const information = await response.json();
+  
+              // Confirm if data is received
+              if (!information.value || information.value.length === 0) {
+                  $('#result').html('<p>No incentives located for the selected criteria.</p>');
+              } else {
+                  // Observe the last heading to bypass duplicate headings
+                  let lastHeading = null;
+  
+                  // Create markup for the incentive table
+                  let markup = `
+                      <table class="table table-bordered">
+                          <thead>
+                              <tr>
+                                  <th class="bg-info">Serial</th>
+                                  <th class="bg-info">Incentive Name</th>
+                                  <th class="bg-info">Details</th>
+                                  <th class="bg-info">Notes</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                  `;
+  
+                  let serial = 1;
+  
+                  information.value.forEach(item => {
+                      // Verify if heading differs from the last shown heading
+                      if (item.kum_heading !== lastHeading) {
+                          // Show heading if different and refresh lastHeading tracker
+                          markup += `
+                              <tr>
+                                  <td colspan="4" class="bg-secondary" style="font-weight:bold;">${item.kum_heading}</td>
+                              </tr>`;
+                          lastHeading = item.kum_heading;
+                      }
+  
+                      // Append an incentive details row under current heading
+                      markup += `
+                          <tr>
+                              <td>${serial}</td>
+                              <td>${item.kum_incentivename}</td>
+                              <td>${item.kum_zonedescription}</td>
+                              <td>${item.kum_notes}</td>
+                          </tr>`;
+  
+                      serial++; // Increase serial
+                  });
+  
+                  markup += '</tbody></table>';
+  
+                  // Exhibit the table in the result section
+                  $('#result').html(markup);
+                  tableAcquired = true; // Set flag indicating table acquisition
+              }
+          } catch (error) {
+              console.error('Error acquiring incentive details:', error);
+              $('#result').html('<p>Error obtaining incentive information.</p>');
+          } finally {
+              hideLoader('#incentive-loader'); // Hide incentive loader
+          }
+      }  
+  });  
+  
+  </script> 
+</head>
+<body>
+    <div id="overlay"></div>
+    <div id="content-wrapper">
+        <h1>Page Content</h1>
+        <p>This is the content of the page that will be blurred when the loader is active.</p>
+    </div>
+
+    <div id="project-loader" class="loader">Loading...</div>
+    <div id="district-loader" class="loader">Loading...</div>
+</body>
+</html>

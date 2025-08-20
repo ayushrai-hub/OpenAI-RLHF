@@ -1,0 +1,343 @@
+<!-- ideal_completion.html -->
+ 
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Web Page</title>
+    <meta name="google-site-verification" content="dsHBqZMJDr1TsKR/b2txLlnEPw/O5GTEXOWWiieNrJY=" />
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    <meta name="description"
+        content="Discover the work of Jane Doe, an enthusiastic high schooler and future web programmer. Check out a collection of creative projects, from dynamic site designs to practical apps. Uncover my expertise in HTML, CSS, JavaScript, and other languages. Let's collaborate and produce greatness!">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            line-height: 1.6
+        }
+
+        header {
+            background: linear-gradient(135deg, #FF6F61, #D63D69);
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+            position: relative
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1
+        }
+
+        .header-content h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            animation: fadeInUp 1.5s ease-out
+        }
+
+        .header-content p {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            animation: fadeInUp 2s ease-out
+        }
+
+        .call-to-action {
+            display: inline-block;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            color: white;
+            background-color: #4CAF50;
+            border: none;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: background-color .3s ease, transform .3s ease
+        }
+
+        .call-to-action:hover {
+            background-color: #388E3C;
+            transform: scale(1.05)
+        }
+
+        nav {
+            background: #333;
+            color: white;
+            padding: 10px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            align-items: center
+        }
+
+        nav ul li {
+            margin: 0 15px
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: color .3s ease
+        }
+
+        nav ul li a:hover {
+            color: #FFD700
+        }
+
+        section {
+            padding: 40px 20px;
+            text-align: center
+        }
+
+        section h2 {
+            font-size: 2rem;
+            margin-bottom: 20px
+        }
+
+        .project-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px
+        }
+
+        .project {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, .1);
+            width: 80%;
+            max-width: 500px;
+            text-align: left;
+            margin-bottom: 20px
+        }
+
+        .project h3 {
+            margin-bottom: 10px
+        }
+
+        .project p {
+            margin-bottom: 10px
+        }
+
+        .project a {
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 10px
+        }
+
+        .project a:hover {
+            text-decoration: underline
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #333;
+            color: white
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        #abilities {
+            display: flex;
+            flex-direction: column;
+            align-items: center
+        }
+
+        #abilities ul {
+            list-style: none;
+            display: flex;
+            gap: 20px;
+            padding: 0;
+            margin: 0
+        }
+
+        #abilities li {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, .2);
+            font-size: 1rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color .3s ease
+        }
+
+        #abilities li:hover {
+            background-color: #388E3C
+        }
+
+        .menu-icon {
+            display: none;
+            flex-direction: column;
+            cursor: pointer;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000
+        }
+
+        .menu-icon .bar {
+            background: white;
+            height: 3px;
+            width: 25px;
+            margin: 4px 0;
+            transition: .3s
+        }
+
+        #navigation {
+            display: flex
+        }
+
+        #navigation ul {
+            display: flex
+        }
+
+        @media(max-width:768px) {
+            header {
+                padding: 60px 20px
+            }
+
+            .header-content h1 {
+                font-size: 2.5rem
+            }
+
+            .header-content p {
+                font-size: 1rem
+            }
+
+            .menu-icon {
+                display: flex
+            }
+
+            #navigation ul {
+                display: none;
+                flex-direction: column;
+                width: 100%;
+                background: #333
+            }
+
+            #navigation.active ul {
+                display: flex
+            }
+
+            #navigation ul li {
+                margin: 0;
+                text-align: center
+            }
+
+            #navigation ul li a {
+                padding: 15px;
+                display: block;
+                font-size: 1.2rem
+            }
+
+            #abilities ul {
+                flex-direction: column;
+                gap: 10px
+            }
+
+            .project {
+                margin-bottom: 10px;
+                padding: 15px
+            }
+
+            footer {
+                padding: 15px 0
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-content">
+            <h1>Hello, I'm Jane Doe</h1>
+            <p>High Schooler & Future Coder</p>
+            <a href="#about-me" class="call-to-action">Read More</a>
+        </div>
+        <div class="menu-icon" id="menu-icon">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </div>
+    </header>
+    <nav id="navigation">
+        <ul>
+            <li><a href="./myinfo.html">About Me</a></li>
+            <li><a href="#abilities">Skills</a></li>
+            <li><a href="#work">Projects</a></li>
+            <li><a href="./reachme.html">Contact</a></li>
+        </ul>
+    </nav>
+    <section id="about-me">
+        <h2>About Me</h2>
+        <p>I'm a high school student with a love for web design, code, and tech learning. Can't wait to create awesome
+            projects and improve my hands-on knowledge in tech.</p>
+    </section>
+    <section id="abilities">
+        <h2>Skills</h2>
+        <ul>
+            <li>HTML</li>
+            <li>CSS</li>
+            <li>JavaScript</li>
+            <li>Python</li>
+            <li>Problem-solving</li>
+        </ul>
+    </section>
+    <section id="work">
+        <h2>Projects</h2>
+        <div class="project-container">
+            <div class="project">
+                <h3>First Website</h3>
+                <p>A basic site I developed to test my skills in HTML and CSS.</p>
+                <a href="https://example.com/sample-url">See Project</a>
+            </div>
+            <div class="project">
+                <h3>Calc App</h3>
+                <p>A simple calculator application I created with JavaScript.</p>
+                <a href="./calc.html">See Project</a>
+            </div>
+        </div>
+    </section>
+    <footer>
+        <p>&copy; 2024 Jane Doe. All rights reserved.</p>
+    </footer>
+    <script src="main-script.js"></script>
+</body>
+
+</html>

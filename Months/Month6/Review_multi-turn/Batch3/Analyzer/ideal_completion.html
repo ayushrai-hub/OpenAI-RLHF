@@ -1,0 +1,383 @@
+<!--ideal_completion.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mutual Fund Trend Analyzer</title>
+    <!-- Include necessary libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            font-weight: bold;
+        }
+        #search {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        #fund-checkboxes {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #fff;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        #fund-checkboxes label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        #fund-details {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: #fff;
+        }
+        #fund-details th, #fund-details td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            font-size: 12px;
+            text-align: center;
+        }
+        #fund-details th {
+            background: #333;
+            color: #fff;
+            font-weight: bold;
+        }
+        #fund-details tbody tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        #date-selectors {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        #date-selectors label {
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        #trend-graph {
+            max-width: 100%;
+            height: 400px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mutual Fund Trend Analyzer</h1>
+    <!-- Search input -->
+    <input type="text" id="search" placeholder="Search for mutual funds...">
+
+    <!-- Div for fund checkboxes -->
+    <div id="fund-checkboxes">
+        <!-- Sample checkbox for testing -->
+        <label>
+            <input type="checkbox" data-scheme-code="sample">Sample Fund
+        </label>
+        <!-- Rest will be dynamically populated here -->
+    </div>
+
+    <!-- Table for selected funds -->
+    <table id="fund-details">
+        <!-- Headers -->
+        <thead>
+            <tr>
+                <th>Scheme Name</th>
+                <th>Scheme Category</th>
+                <th>Current Date</th>
+                <th>Current NAV</th>
+                <th>5-Year CAGR (%)</th>
+                <th>3-Year CAGR (%)</th>
+                <th>YTD Change (%)</th>
+                <th>1-Month Change (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Selected fund details will be dynamically populated here -->
+        </tbody>
+    </table>
+
+    <!-- Date selectors -->
+    <div id="date-selectors">
+        <label for="start-date">From:</label>
+        <input type="date" id="start-date">
+        <label for="end-date">To:</label>
+        <input type="date" id="end-date">
+    </div>
+
+    <!-- Canvas for the graph -->
+    <canvas id="trend-graph"></canvas>
+
+    <!-- Include necessary JavaScript -->
+    <script>
+        $(document).ready(function() {
+            const fundCheckboxes = $('#fund-checkboxes');
+            const searchInput = $('#search');
+            let allFunds = [];
+            let selectedFunds = {};
+            let chart;
+
+            // Initialize date selectors
+            const endDateInput = $('#end-date');
+            const startDateInput = $('#start-date');
+            const today = new Date();
+            const priorDate = new Date().setDate(today.getDate() - 30);
+            const formatDate = d => d.toISOString().split('T')[0];
+            endDateInput.val(formatDate(today));
+            startDateInput.val(formatDate(new Date(priorDate)));
+
+            // Fetch the list of mutual funds
+            $.getJSON('https://api.mfapi.in/mf', function(data) {
+                allFunds = data;
+                populateFundCheckboxes(allFunds);
+            });
+
+            function populateFundCheckboxes(funds) {
+                fundCheckboxes.empty();
+                funds.forEach(fund => {
+                    let label = $('<label></label>').text(fund.schemeName);
+                    let checkbox = $('<input type="checkbox">').attr('data-scheme-code', fund.schemeCode);
+                    label.prepend(checkbox);
+                    fundCheckboxes.append(label);
+                });
+            }
+
+            // Search functionality
+            searchInput.on('input', function() {
+                const query = $(this).val().toLowerCase();
+                const filteredFunds = allFunds.filter(fund => fund.schemeName.toLowerCase().includes(query));
+                populateFundCheckboxes(filteredFunds);
+            });
+
+            // Event listener for fund selection
+            fundCheckboxes.on('change', 'input[type="checkbox"]', function() {
+                const schemeCode = $(this).attr('data-scheme-code');
+                const isChecked = $(this).is(':checked');
+                if (isChecked) {
+                    addFund(schemeCode);
+                } else {
+                    removeFund(schemeCode);
+                }
+            });
+
+            // Date range change
+            $('#start-date, #end-date').on('change', function() {
+                updateChart();
+            });
+
+            // Add fund to selected funds
+            function addFund(schemeCode) {
+                if (selectedFunds[schemeCode]) return;
+                $.getJSON(`https://api.mfapi.in/mf/${schemeCode}`, function(data) {
+                    selectedFunds[schemeCode] = data;
+                    updateFundDetailsTable();
+                    updateChart();
+                });
+            }
+
+            // Remove fund from selected funds
+            function removeFund(schemeCode) {
+                delete selectedFunds[schemeCode];
+                updateFundDetailsTable();
+                updateChart();
+            }
+
+            // Update the fund details table
+            function updateFundDetailsTable() {
+                const tbody = $('#fund-details tbody');
+                tbody.empty();
+                Object.values(selectedFunds).forEach(fundData => {
+                    const navData = fundData.data;
+                    const schemeName = fundData.meta.scheme_name;
+                    const schemeCategory = fundData.meta.scheme_category || '-';
+                    const currentNav = parseFloat(navData[0].nav);
+                    const currentDate = navData[0].date;
+
+                    // Calculations
+                    const navMap = navData.reduce((acc, navPoint) => {
+                        acc[navPoint.date] = parseFloat(navPoint.nav);
+                        return acc;
+                    }, {});
+
+                    const today = new Date();
+                    const fiveYearsAgo = new Date();
+                    fiveYearsAgo.setFullYear(today.getFullYear() - 5);
+                    const threeYearsAgo = new Date();
+                    threeYearsAgo.setFullYear(today.getFullYear() - 3);
+                    const ytdStart = new Date(today.getFullYear(), 0, 1);
+                    const oneMonthAgo = new Date();
+                    oneMonthAgo.setMonth(today.getMonth() - 1);
+
+                    const getClosestNav = (date) => {
+                        const dateStr = formatDate(date);
+                        if (navMap[dateStr]) {
+                            return navMap[dateStr];
+                        } else {
+                            // Find the closest earlier date
+                            let tempDate = new Date(date);
+                            for (let i = 0; i < 5; i++) {
+                                tempDate.setDate(tempDate.getDate() - 1);
+                                const tempDateStr = formatDate(tempDate);
+                                if (navMap[tempDateStr]) {
+                                    return navMap[tempDateStr];
+                                }
+                            }
+                            return null;
+                        }
+                    };
+
+                    const nav5YearsAgo = getClosestNav(fiveYearsAgo);
+                    const nav3YearsAgo = getClosestNav(threeYearsAgo);
+                    const navYTDStart = getClosestNav(ytdStart);
+                    const nav1MonthAgo = getClosestNav(oneMonthAgo);
+
+                    const cagr = (startNav, endNav, years) => {
+                        if (!startNav || !endNav || startNav <= 0) return '-';
+                        return (((Math.pow(endNav / startNav, 1 / years) - 1) * 100).toFixed(2));
+                    };
+
+                    const percentChange = (startNav, endNav) => {
+                        if (!startNav || !endNav || startNav <= 0) return '-';
+                        return (((endNav - startNav) / startNav) * 100).toFixed(2);
+                    };
+
+                    const fiveYearCAGR = cagr(nav5YearsAgo, currentNav, 5);
+                    const threeYearCAGR = cagr(nav3YearsAgo, currentNav, 3);
+                    const ytdChange = percentChange(navYTDStart, currentNav);
+                    const oneMonthChange = percentChange(nav1MonthAgo, currentNav);
+
+                    const row = $('<tr></tr>');
+                    row.append($('<td></td>').text(schemeName).css('font-weight', 'bold'));
+                    row.append($('<td></td>').text(schemeCategory));
+                    row.append($('<td></td>').text(currentDate));
+                    row.append($('<td></td>').text(currentNav.toFixed(2)));
+                    row.append($('<td></td>').text(fiveYearCAGR));
+                    row.append($('<td></td>').text(threeYearCAGR));
+                    row.append($('<td></td>').text(ytdChange));
+                    row.append($('<td></td>').text(oneMonthChange));
+
+                    tbody.append(row);
+                });
+            }
+
+            // Update the chart
+            function updateChart() {
+                const labels = [];
+                const datasets = [];
+                const startDate = $('#start-date').val();
+                const endDate = $('#end-date').val();
+                const startDateObj = new Date(startDate);
+                const endDateObj = new Date(endDate);
+
+                // Generate date labels
+                for (let d = new Date(startDateObj); d <= endDateObj; d.setDate(d.getDate() + 1)) {
+                    labels.push(formatDate(new Date(d)));
+                }
+
+                Object.values(selectedFunds).forEach((fundData, index) => {
+                    const navData = fundData.data;
+                    const schemeName = fundData.meta.scheme_name;
+                    const navMap = {};
+                    navData.forEach(entry => {
+                        const date = entry.date;
+                        if (date >= startDate && date <= endDate) {
+                            navMap[date] = parseFloat(entry.nav);
+                        }
+                    });
+
+                    // Sort dates
+                    const fundDates = Object.keys(navMap).sort();
+                    // Get initial NAV
+                    const initialNav = navMap[fundDates[0]];
+                    // Prepare data points
+                    const dataPoints = labels.map(date => {
+                        if (navMap[date]) {
+                            // Calculate % change from initial NAV
+                            return ((navMap[date] - initialNav) / initialNav) * 100;
+                        } else {
+                            return null;
+                        }
+                    });
+
+                    const color = getRandomColor();
+                    datasets.push({
+                        label: schemeName,
+                        data: dataPoints,
+                        borderColor: color,
+                        fill: false
+                    });
+                });
+
+                if (chart) {
+                    chart.destroy();
+                }
+
+                const ctx = document.getElementById('trend-graph').getContext('2d');
+                chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        title: {
+                            display: true,
+                            text: 'NAV Trend Comparison (% Change)'
+                        },
+                        tooltips: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        hover: {
+                            mode: 'nearest',
+                            intersect: true
+                        },
+                        scales: {
+                            xAxes: [{
+                                type: 'time',
+                                time: {
+                                    parser: 'YYYY-MM-DD',
+                                    unit: 'day',
+                                    displayFormats: {
+                                        day: 'YYYY-MM-DD'
+                                    }
+                                },
+                                display: true,
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'Date'
+                                }
+                            }],
+                            yAxes: [{
+                                display: true,
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: '% Change'
+                                }
+                            }]
+                        }
+                    }
+                });
+            }
+
+            function getRandomColor() {
+                const letters = '789ABCD';
+                let color = '#';
+                for (let i = 0; i < 6; i++) {
+                    color += letters[Math.floor(Math.random() * letters.length)];
+                }
+                return color;
+            }
+        });
+    </script>
+</body>
+</html>

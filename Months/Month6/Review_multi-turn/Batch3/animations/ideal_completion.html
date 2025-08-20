@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Engaging Personal Portfolio</title>
+  <!-- GSAP and ScrollTrigger Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+  <!-- Inline CSS -->
+  <style>
+    /* Global Styles */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+      transition: all 0.3s ease;
+    }
+
+    body {
+      background: #f0f0f0;
+      color: #333;
+      overflow-x: hidden;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* Header and Navigation Styles */
+    header {
+      position: fixed;
+      width: 100%;
+      top: 0;
+      left: 0;
+      background: #333;
+      padding: 15px 0;
+      z-index: 1000;
+      transition: padding 0.3s ease;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+    }
+
+    .nav-links a {
+      color: #fff;
+      font-size: 18px;
+      position: relative;
+    }
+
+    .nav-links a::after {
+      content: "";
+      width: 0;
+      height: 2px;
+      background: #00bcd4;
+      position: absolute;
+      bottom: -3px;
+      left: 0;
+      transition: width 0.3s ease;
+    }
+
+    .nav-links a:hover::after {
+      width: 100%;
+    }
+
+    .nav-links a:hover {
+      color: #00bcd4; /* Distinct hover color */
+    }
+
+    header.scrolled {
+      padding: 8px 0;
+    }
+
+    /* Sections Styles */
+    section {
+      min-height: 100vh;
+      padding: 100px 20px 50px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    /* Welcome Section */
+    #welcome-section {
+      background: linear-gradient(135deg, #00bcd4, #008c9e);
+      color: #fff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #welcome-section h1 {
+      font-size: 48px;
+      opacity: 0;
+    }
+
+    /* Profile Section */
+    #profile-section {
+      background: #e0e0e0;
+    }
+
+    /* Work Section with 3D Cards */
+    .project-container {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .project-card {
+      width: 280px;
+      height: 200px;
+      perspective: 1000px;
+    }
+
+    .card-inner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.6s ease;
+    }
+
+    .project-card:hover .card-inner {
+      transform: rotateY(180deg);
+    }
+
+    .card-front, .card-back {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .card-front {
+      background: #333;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-back {
+      background: #00bcd4;
+      color: #fff;
+      transform: rotateY(180deg);
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Contact Section with Form */
+    form {
+      max-width: 400px;
+      width: 100%;
+    }
+
+    form input, form textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 2px solid #b0b0b0; /* Neutral initial border color */
+      border-radius: 5px;
+      font-size: 16px;
+      outline: none;
+    }
+
+    form input:focus, form textarea:focus {
+      border-color: #00bcd4;
+    }
+
+form input:valid, form textarea:valid {
+  border-color: #2ecc71; /* Green border for valid input */
+}
+
+form input:invalid:not(:placeholder-shown), form textarea:invalid:not(:placeholder-shown) {
+  border-color: #e74c3c; /* Red border for invalid input */
+}
+
+.error {
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background: #00bcd4;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-5px);
+  background: #008c9e; /* Distinct hover background */
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #333;
+  color: #fff;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  z-index: 1000;
+}
+
+.dark-theme {
+  background: #121212;
+  color: #f0f0f0;
+}
+
+.dark-theme header {
+  background: #000;
+}
+</style>
+</head>
+<body>
+<!-- Header and Navigation -->
+<header id="header">
+<nav class="nav-links">
+  <a href="#welcome-section">Welcome</a>
+  <a href="#profile-section">Profile</a>
+  <a href="#work-section">Work</a>
+  <a href="#contact-section">Contact</a>
+</nav>
+</header>
+
+<!-- Welcome Section -->
+<section id="welcome-section">
+<h1>Welcome to My Portfolio</h1>
+</section>
+
+<!-- Profile Section -->
+<section id="profile-section">
+<h2>About Me</h2>
+<p>Passionate developer with experience in web technologies.</p>
+</section>
+
+<!-- Work Section -->
+<section id="work-section">
+<h2>My Projects</h2>
+<div class="project-container">
+  <!-- Project Card 1 -->
+  <div class="project-card">
+    <div class="card-inner">
+      <div class="card-front">Project 1</div>
+      <div class="card-back">Details about Project 1.</div>
+    </div>
+  </div>
+  <!-- Project Card 2 -->
+  <div class="project-card">
+    <div class="card-inner">
+      <div class="card-front">Project 2</div>
+      <div class="card-back">Details about Project 2.</div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- Contact Section -->
+<section id="contact-section">
+<h2>Get In Touch</h2>
+<form id="contactForm">
+  <input type="text" id="name" placeholder="Your Name" required>
+  <input type="email" id="email" placeholder="Your Email" required>
+  <textarea id="message" rows="5" placeholder="Your Message" required></textarea>
+  <button type="submit">Send</button>
+</form>
+</section>
+
+<!-- Theme Toggle Button -->
+<button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+
+<!-- Inline JavaScript -->
+<script>
+// GSAP Animations
+gsap.from('#welcome-section h1', { y: -100, opacity: 0, duration: 1, ease: 'bounce' });
+gsap.utils.toArray('.project-card').forEach(card => {
+  gsap.from(card, {
+    scrollTrigger: {
+      trigger: card,
+      start: 'top 80%',
+      toggleActions: 'play none none none'
+    },
+    y: 50,
+    opacity: 0,
+    duration: 0.5
+  });
+});
+
+// Header Scroll Animation
+window.addEventListener('scroll', () => {
+  const header = document.getElementById('header');
+  header.classList.toggle('scrolled', window.scrollY > 50);
+});
+
+// Form Validation
+const form = document.getElementById('contactForm');
+form.add
+EventListener('submit', (e) => {
+        e.preventDefault();
+        const name = document.getElementById('name');
+        const email = document.getElementById('email');
+        const message = document.getElementById('message');
+        [name, email, message].forEach(field => {
+          field.classList.toggle('error', !field.checkValidity());
+        });
+        if (name.checkValidity() && email.checkValidity() && message.checkValidity()) {
+          alert('Form submitted successfully!');
+          form.reset();
+        }
+      });
+
+      // Theme Toggle Functionality
+      function toggleTheme() {
+        document.body.classList.toggle('dark-theme');
+      }
+    </script>
+  </body>
+</html>

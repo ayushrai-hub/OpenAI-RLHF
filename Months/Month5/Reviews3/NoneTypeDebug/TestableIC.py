@@ -1,0 +1,51 @@
+import numpy as np
+
+def compute_average_and_error(data, d_data):
+    if data is None or d_data is None:
+        raise ValueError("Input data and uncertainties must not be None.")
+    return np.mean(data), np.sqrt(np.sum(d_data**2)) / len(data)
+
+def compute_cylinder_volume(length, diam):
+    return np.pi * (diam / 2)**2 * length
+
+def compute_rectangular_volume(length, base, depth):
+    return length * base * depth
+
+def calculate_sphere_with_hole_volume(diam_sphere, diam_hole):
+    sphere_volume = 4/3 * np.pi * (diam_sphere / 2)**3
+    hole_volume = 4/3 * np.pi * (diam_hole / 2)**3
+    return sphere_volume - hole_volume
+
+def compute_density(mass, volume, d_mass, d_volume):
+    density = mass / volume
+    d_density = density * np.sqrt((d_mass / mass)**2 + (d_volume / volume)**2)
+    return density, d_density
+
+def process_material(lengthData, dLength, diamData, dDiam, massData, dMass, form="cylinder", baseData=None, dBase=None, depthData=None, dDepth=None, diamHoleData=None, dDiamHole=None):
+    avg_length, d_avg_length = compute_average_and_error(lengthData, dLength)
+    avg_mass, d_avg_mass = compute_average_and_error(massData, dMass)
+    
+    if form == "cylinder":
+        avg_diam, d_avg_diam = compute_average_and_error(diamData, dDiam)
+        total_volume = compute_cylinder_volume(avg_length, avg_diam)
+        d_total_volume = total_volume * np.sqrt((d_avg_length / avg_length)**2 + (d_avg_diam / avg_diam)**2)
+    elif form == "rectangle":
+        avg_base, d_avg_base = compute_average_and_error(baseData, dBase)
+        avg_depth, d_avg_depth = compute_average_and_error(depthData, dDepth)
+        total_volume = compute_rectangular_volume(avg_length, avg_base, avg_depth)
+        d_total_volume = total_volume * np.sqrt((d_avg_length / avg_length)**2 + (d_avg_base / avg_base)**2 + (d_avg_depth / avg_depth)**2)
+    elif form == "sphere_with_hole":
+        if diamData is None or dDiam is None or diamHoleData is None or dDiamHole is None:
+            raise ValueError("Diameter data for the sphere or hole must not be None.")
+        
+        avg_diameter_sphere, d_avg_diameter_sphere = compute_average_and_error(diamData, dDiam)
+        avg_diameter_hole, d_avg_diameter_hole = compute_average_and_error(diamHoleData, dDiamHole)
+        total_volume = calculate_sphere_with_hole_volume(avg_diameter_sphere, avg_diameter_hole)
+        d_total_volume = total_volume * np.sqrt((d_avg_diameter_sphere / avg_diameter_sphere)**2 + (d_avg_diameter_hole / avg_diameter_hole)**2)
+
+    avg_density, d_avg_density = compute_density(avg_mass, total_volume, d_avg_mass, d_total_volume)
+
+    print(f"Avg Length: {avg_length:.2f} cm | Unc: {d_avg_length:.2f} cm")
+    print(f"Avg Mass: {avg_mass:.2f} g | Unc: {d_avg_mass:.2f} g")
+    print(f"Volume: {total_volume:.2f} cm^3 | Unc: {d_total_volume:.2f} cm^3")
+    print(f"Density: {avg_density:.2f} g/cm^3 | Unc: {d_avg_density:.2f} g/cm^3\n")

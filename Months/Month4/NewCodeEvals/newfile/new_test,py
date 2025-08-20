@@ -1,0 +1,132 @@
+# test_ideal_completion.py
+import unittest
+from unittest.mock import MagicMock, patch
+import threading
+import socket
+import json
+import time
+
+from new_ideal_completion import (
+    handle_client,
+    broadcast_positions,
+    players,
+    connections,
+    lock,
+    validate_position,
+    CONFIG
+)
+
+class TestGameServer(unittest.TestCase):
+    def setUp(self):
+        """Reset shared data structures before each test."""
+        with lock:
+            players.clear()
+            connections.clear()
+        self.addr = ('127.0.0.1', 12345)
+
+    def tearDown(self):
+        """Clean up after each test."""
+        with lock:
+            players.clear()
+            connections.clear()
+
+    def create_mock_connection(self, recv_data=None):
+        """Create a mock connection with specified receive data."""
+        mock_conn = MagicMock(spec=socket.socket)
+        mock_conn.getpeername.return_value = self.addr
+        
+        if isinstance(recv_data, (list, tuple)):
+            mock_conn.recv.side_effect = list(recv_data) + [b'']
+        elif recv_data is not None:
+            mock_conn.recv.side_effect = [recv_data, b'']
+        else:
+            mock_conn.recv.return_value = b''
+            
+        return mock_conn
+
+    def test_initial_connection(self):
+        """Test initial player connection setup."""
+        mock_conn = self.create_mock_connection()
+        handle_client(mock_conn, self.addr)
+        
+        with lock:
+            self.assertNotIn(self.addr[1], players)
+            self.assertNotIn(mock_conn, connections)
+        mock_conn.close.assert_called()
+
+    def test_path_obstruction_handling(self):
+        """Test processing of path obstruction packets."""
+        data = json.dumps({'type': 'pathObstructed'}).encode('utf-8')
+        mock_conn = self.create_mock_connection(data)
+        
+        # Initialize player state before test
+        with lock:
+            players[self.addr[1]] = {'position': [0, 0], 'moving': True}
+            connections.append(mock_conn)
+            
+        # Run the handler
+        handle_client(mock_conn, self.addr)
+        
+        # Verify the state
+        with lock:
+            self.assertFalse(players.get(self.addr[1], {}).get('moving'))
+
+    def test_max_players_limit(self):
+        """Test server enforces maximum player limit."""
+        # Fill up to max players
+        for i in range(CONFIG['MAX_PLAYERS']):
+            addr = ('127.0.0.1', 50000 + i)
+            with lock:
+                players[addr[1]] = {'position': [0, 0], 'moving': False}
+        
+        # Try to add one more player
+        extra_conn = self.create_mock_connection()
+        handle_client(extra_conn, ('127.0.0.1', 60000))
+        
+        with lock:
+            self.assertEqual(len(players), CONFIG['MAX_PLAYERS'])
+            self.assertNotIn(extra_conn, connections)
+        extra_conn.close.assert_called_once()
+
+    def test_broadcast_error_handling(self):
+        """Test handling of broadcast errors."""
+        mock_conn1 = self.create_mock_connection()
+        mock_conn2 = self.create_mock_connection()
+        mock_conn2.sendall.side_effect = socket.error()
+        
+        with lock:
+            players[1] = {'position': [10, 20], 'moving': True}
+            connections.extend([mock_conn1, mock_conn2])
+
+        broadcast_positions()
+        
+        with lock:
+            self.assertIn(mock_conn1, connections)
+            self.assertNotIn(mock_conn2, connections)
+
+    def test_validate_position(self):
+        """Test position validation function."""
+        valid_positions = [
+            [0, 0],
+            [100.5, 200.5],
+            [-10, -20],
+        ]
+        invalid_positions = [
+            None,
+            "invalid",
+            [1],
+            [1, 2, 3],
+            ["a", "b"],
+            {},
+        ]
+        
+        for pos in valid_positions:
+            with self.subTest(position=pos):
+                self.assertTrue(validate_position(pos))
+                
+        for pos in invalid_positions:
+            with self.subTest(position=pos):
+                self.assertFalse(validate_position(pos))
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)
