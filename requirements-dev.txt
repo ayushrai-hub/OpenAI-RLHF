@@ -1,0 +1,27 @@
+# Development / tooling dependencies only.
+# Individual eval tasks may require additional packages (tensorflow, selenium, etc.).
+
+# No version pins — install what you need per task domain.
+# See docs/10-dependency-guide.md for common per-domain packages.
+
+# Tooling (optional)
+pytest>=7.0
+
+# Commonly needed for representative Months tasks
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+scikit-learn>=1.3
+
+# Web eval tasks (Month6 Batch3)
+selenium>=4.0
+
+# ML tasks (install as needed)
+# tensorflow>=2.14
+# torch>=2.0
+# transformers>=4.30
+# openai>=1.0
+# langchain-chroma>=0.1
+
+# TradingBot (Colosseum/V2/Week1/TradingBot/CompletionB/requirements.txt)
+# ccxt pandas ta python-telegram-bot sqlalchemy pyyaml python-dotenv
